@@ -1,57 +1,130 @@
 
 #include <Arduino.h>
-#include <MPU6050.h>
+#include <String.h>
+#include <Adafruit_MPU6050.h>
+#include <Adafruit_Sensor.h>
 #include <Wire.h>
 
-// 初始化 I2C 和 MPU6050
-TwoWire I2C_B = TwoWire(0); // 使用 I2C 总线 0
-MPU6050 mpu6050(I2C_B);
+Adafruit_MPU6050 mpu;
+sensors_event_t a, g, temp; // acceleration, vitesse du gyropode, température
+
+char FlagCalcul = 0; // flag pour indiquer que les grandeurs ont été lues et que le calcul peut être effectué par la fonction contrôle
+float Te = 5;        // période d'échantillonage en ms
+float Tau = 1000;    // constante de temps du filtre en ms
+
+// mesure du MPU
+float tetagr, tetaomg, tetaF; // angle de gravité mesuré par accéléromètre, angle, angle une fois filtré
+
+// coefficient du filtre
+float A, B;
+
+void controle(void *parameters)
+{
+    TickType_t xLastWakeTime;
+    xLastWakeTime = xTaskGetTickCount();
+    while (1)
+    {
+        mpu.getEvent(&a, &g, &temp);                        // lecture des grandeurs du MPU6050
+        tetagr = atan(a.acceleration.x / a.acceleration.y); // calcul de l'angle de gravité à partir des mesures d'accélération
+        tetaF = A * tetaF + B * tetagr;                     // filtrage de l'angle de gravité Passe-Bas
+        tetaomg = A * Tau / 1000 * g.gyro.z + B * tetaomg;  // filtrage de la vitesse du gyropode Passe-Bas
+
+        FlagCalcul = 1;
+        vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(Te));
+    }
+}
 
 void setup()
 {
+    // put your setup code here, to run once:
     Serial.begin(115200);
+    Serial.printf("Bonjour \n\r");
 
-    // 初始化 I2C 总线
-    I2C_B.begin(8, 9, 400000UL); // SDA=8, SCL=9, 400kHz
+    // Try to initialize de la librarie MPU6050
+    if (!mpu.begin())
+    {
+        Serial.println("Failed to find MPU6050 chip");
+        while (1)
+        {
+            delay(10);
+        }
+    }
+    Serial.println("MPU6050 Found!");
 
-    // 初始化 MPU6050
-    mpu6050.begin();
+    xTaskCreate(
+        controle,   // nom de la fonction
+        "controle", // nom de la tache que nous venons de vréer
+        10000,      // taille de la pile en octet
+        NULL,       // parametre
+        10,         // tres haut niveau de priorite
+        NULL        // descripteur
+    );
 
-    // 校准陀螺仪（需保持传感器静止）
-    Serial.println("正在校准 MPU6050，请保持传感器静止...");
-    mpu6050.calcGyroOffsets();
-    Serial.println("校准完成！");
+    // calcul coeff filtre
+    A = 1 / (1 + Tau / Te);
+    B = Tau / Te * A;
+}
+
+void reception(char ch)
+{
+    static int i = 0;
+    static String chaine = "";
+    String commande;
+    String valeur;
+    int index, length;
+
+    if ((ch == 13) or (ch == 10))
+    {
+        index = chaine.indexOf(' ');
+        length = chaine.length();
+        if (index == -1)
+        {
+            commande = chaine;
+            valeur = "";
+        }
+        else
+        {
+            commande = chaine.substring(0, index);
+            valeur = chaine.substring(index + 1, length);
+        }
+
+        if (commande == "Tau")
+        {
+            Tau = valeur.toFloat();
+            // calcul coeff filtre
+            A = 1 / (1 + Tau / Te);
+            B = Tau / Te * A;
+        }
+        if (commande == "Te")
+        {
+            Te = valeur.toInt();
+            A = 1 / (1 + Tau / Te);
+            B = Tau / Te * A;
+        }
+
+        chaine = "";
+    }
+    else
+    {
+        chaine += ch;
+    }
 }
 
 void loop()
 {
-    // 更新传感器数据
-    mpu6050.update();
+    if (FlagCalcul == 1)
+        // affichage des angles en radians
+        Serial.printf("%lf %lf %lf %lf \n", tetagr, tetaomg, tetaF, tetaomg + tetagr);
 
-    // 读取加速度数据
-    float accelX = mpu6050.getAccX();
-    float accelY = mpu6050.getAccY();
-    float accelZ = mpu6050.getAccZ();
+    FlagCalcul = 0;
+}
 
-    // 读取陀螺仪数据
-    float gyroX = mpu6050.getGyroX();
-    float gyroY = mpu6050.getGyroY();
-    float gyroZ = mpu6050.getGyroZ();
 
-    // 打印数据
-    Serial.print("Accel (g): X=");
-    Serial.print(accelX);
-    Serial.print(" Y=");
-    Serial.print(accelY);
-    Serial.print(" Z=");
-    Serial.print(accelZ);
+void serialEvent()
+{
 
-    Serial.print(" | Gyro (deg/s): X=");
-    Serial.print(gyroX);
-    Serial.print(" Y=");
-    Serial.print(gyroY);
-    Serial.print(" Z=");
-    Serial.print(gyroZ);
-
-    delay(200); // 采样间隔
+    while (Serial.available() > 0) // tant qu'il y a des caractères à lire
+    {
+        reception(Serial.read());
+    }
 }

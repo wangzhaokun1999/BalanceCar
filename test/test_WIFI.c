@@ -1,74 +1,50 @@
 #include <Arduino.h>
 #include <WiFi.h>
+#include <WebServer.h>
 
-const char *ssid = "zwang";        // 替换为你的 WiFi 名称
-const char *password = "123456789"; // 替换为你的 WiFi 密码
+// ====== AP 参数 ======
+const char* ap_ssid = "zwang";
+const char* ap_password = "12345678";  
 
-void setup()
-{
-    Serial.begin(115200);
+WebServer server(80);
 
-    // 启动 WiFi 连接
-    WiFi.begin(ssid, password);
-    Serial.print("Connecting to WiFi");
+// ====== 网页处理函数 ======
+void handleRoot() {
 
-    while (WiFi.status() != WL_CONNECTED)
-    {
-        delay(500);
-        Serial.print(".");
-    }
+  String html = "<!DOCTYPE html>";
+  html += "<html><head>";
+  html += "<meta charset='UTF-8'>";
+  html += "<meta name='viewport' content='width=device-width, initial-scale=1.0'>";
+  html += "<title>Balance Car</title>";
+  html += "</head><body>";
+  html += "<h1>ESP32 Balance Car</h1>";
+  html += "<p>System Online</p>";
+  html += "<p>Status: OK</p>";
+  html += "</body></html>";
 
-    Serial.println("\nConnected!");
-    Serial.print("IP Address: ");
-    Serial.println(WiFi.localIP());
-
-    // 初始信号强度检测
-    int rssi = WiFi.RSSI();
-    Serial.print("Initial RSSI: ");
-    Serial.print(rssi);
-    Serial.println(" dBm");
+  server.send(200, "text/html", html);
 }
 
-void loop()
-{
-    static unsigned long previousMillis = 0;
-    const long interval = 3000; // 检测间隔（3秒）
+void setup() {
 
-    // 非阻塞式定时检测
-    if (millis() - previousMillis >= interval)
-    {
-        previousMillis = millis();
+  Serial.begin(115200);
 
-        if (WiFi.status() == WL_CONNECTED)
-        {
-            int rssi = WiFi.RSSI();
-            Serial.print("RSSI: ");
-            Serial.print(rssi);
-            Serial.print(" dBm | ");
+  // 启动 AP 模式
+  WiFi.mode(WIFI_AP);
+  WiFi.softAP(ap_ssid, ap_password);
 
-            // 信号质量分级
-            if (rssi >= -50)
-            {
-                Serial.println("极强信号");
-            }
-            else if (rssi >= -60)
-            {
-                Serial.println("强信号");
-            }
-            else if (rssi >= -70)
-            {
-                Serial.println("中等信号");
-            }
-            else
-            {
-                Serial.println("弱信号");
-            }
-        }
-        else
-        {
-            Serial.println("WiFi 连接已断开!");
-        }
-    }
+  IPAddress IP = WiFi.softAPIP();
 
-    delay(100); // 维持系统稳定性
+  Serial.println("AP Mode Started");
+  Serial.print("IP Address: ");
+  Serial.println(IP);
+
+  server.on("/", handleRoot);
+  server.begin();
+
+  Serial.println("Web Server Started");
+}
+
+void loop() {
+  server.handleClient();
 }

@@ -15,7 +15,7 @@
 #define MB_IN2  35   // D-in
 
 /* ===================== PWM 参数 ===================== */
-#define PWM_FREQ 20000
+#define PWM_FREQ 1000
 #define PWM_RES  8          // 0~255
 #define PWM_MAX  255
 
