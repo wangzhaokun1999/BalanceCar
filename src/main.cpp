@@ -8,35 +8,57 @@ Encodeur encodeur;
 PWM pwm;
 
 // old-platform compatible parameters
-float Te = 5.0f;         // ms
-float Tau = 1000.0f;     // ms
+float Te = 5.0;         // ms
+float Tau = 1000.0;     // ms
 
 // angle-loop parameters
-float Kp_theta = 0.01f;
-float Kd_theta = 0.0f;
+float Kp_theta = 0.01;
+float Kd_theta = 0.0;
 
 // speed-loop parameters
-float Kp_speed = 0.0f;
-float Kd_speed = 0.0f;
+float Kp_speed = 0.0;
+float Kd_speed = 0.0;
+
+// angle utile
+float theta = 0.0;   
+float gyro  = 0.0;
+float theta_corr = 0.0;
+float theta_ref = 0.0;
+float error_theta = 0.0;
+float error_theta_deg = 0.0;
+float gyro_deg = 0.0;
 
 // equilibrium angle
-float theta_eq = 1.56f;
+float theta_eq = 1.57;
 
 // maximum allowed tilt angle (deg)
-float theta_max_deg = 30.0f;
+float theta_max_deg = 30.0;
+
+// pwm & speed variable
+float pwm_value = 0.0;
+float v_left  = 0.0;
+float v_right = 0.0;
+float v_mean  = 0.0;
+float speed_error = 0.0;
+float d_speed = 0.0;
 
 // EC-layer deadzone compensation for left/right motors
-float C0_L = 0.0f;
-float C0_R = 0.0f;
+float C0_L = 0.199;
+float C0_R = 0.196;
+int motor_cmd_L = 0;
+int motor_cmd_R = 0;
 
 // EC range
-float ec_max = 0.45f;
+float ec = 0.0;
+float ec_max = 0.45;
+float ec_corr_L = 0.0;
+float ec_corr_R = 0.0;
 
 // debug values for the Qt plotting tool
-volatile float dbg_theta = 0.0f;
-volatile float dbg_gyro  = 0.0f;
-volatile float dbg_speed = 0.0f;
-volatile float dbg_u     = 0.0f;
+volatile float dbg_theta = 0.0;
+volatile float dbg_gyro  = 0.0;
+volatile float dbg_speed = 0.0;
+volatile float dbg_u     = 0.0;
 
 void applyCompatibilityUpdate()
 {
@@ -52,10 +74,10 @@ void applyCompatibilityUpdate()
 // =====================================================
 float ecCompensate(float ec, float C0)
 {
-    if (fabs(ec) < 1e-4f)
-        return 0.0f;
+    if (fabs(ec) < 0.0001)
+        return 0.0;
 
-    if (ec > 0.0f)
+    if (ec > 0.0)
         return ec + C0;
     else
         return ec - C0;
@@ -69,8 +91,8 @@ int pwmcalcul(float ec)
 {
     ec = constrain(ec, -ec_max, ec_max);
 
-    float pwm_value = (ec / ec_max) * 1000.0f;
-    pwm_value = constrain(pwm_value, -1000.0f, 1000.0f);
+    pwm_value = (ec / ec_max) * 1000.0;
+    pwm_value = constrain(pwm_value, -1000.0, 1000.0);
 
     return (int)pwm_value;
 }
@@ -97,29 +119,29 @@ void reception(char ch)
 
         if (cmd == "Tau")
         {
-            Tau = constrain(v, 1.0f, 10000.0f);
+            Tau = constrain(v, 1.0, 10000.0);
             applyCompatibilityUpdate();
         }
         else if (cmd == "Te")
         {
-            Te = constrain(v, 1.0f, 100.0f);
+            Te = constrain(v, 1.0, 100.0);
             applyCompatibilityUpdate();
         }
         else if (cmd == "KpT")
         {
-            Kp_theta = constrain(v, 0.0f, 1.0f);
+            Kp_theta = constrain(v, 0.0, 1.0);
         }
         else if (cmd == "KdT")
         {
-            Kd_theta = constrain(v, 0.0f, 1.0f);
+            Kd_theta = constrain(v, 0.0, 1.0);
         }
         else if (cmd == "KpS")
         {
-            Kp_speed = constrain(v, 0.0f, 50.0f);
+            Kp_speed = constrain(v, 0.0, 50.0);
         }
         else if (cmd == "KdS")
         {
-            Kd_speed = constrain(v, 0.0f, 50.0f);
+            Kd_speed = constrain(v, 0.0, 50.0);
         }
         else if (cmd == "theta")
         {
@@ -127,15 +149,15 @@ void reception(char ch)
         }
         else if (cmd == "Tmax")
         {
-            theta_max_deg = constrain(v, 1.0f, 60.0f);
+            theta_max_deg = constrain(v, 1.0, 60.0);
         }
         else if (cmd == "C0L")
         {
-            C0_L = constrain(v, 0.0f, 0.5f);
+            C0_L = constrain(v, 0.0, 0.5);
         }
         else if (cmd == "C0R")
         {
-            C0_R = constrain(v, 0.0f, 0.5f);
+            C0_R = constrain(v, 0.0, 0.5);
         }
         buffer = "";
     }
@@ -151,21 +173,21 @@ void reception(char ch)
 void controlTask(void *param)
 {
     TickType_t lastWake = xTaskGetTickCount();
-    float last_speed_error = 0.0f;
+    float last_speed_error = 0.0;
 
     while (1)
     {
-        float theta = imu.getAngle();   // rad
-        float gyro  = imu.getGyroZ();   // rad/s
+        theta = imu.getAngle();   // rad
+        gyro  = imu.getGyroZ();   // rad/s
 
         encodeur.update();
 
-        float v_left  = encodeur.getSpeed_L();
-        float v_right = encodeur.getSpeed_R();
-        float v_mean  = 0.5f * (v_left + v_right);
+        v_left  = encodeur.getSpeed_L();
+        v_right = encodeur.getSpeed_R();
+        v_mean  = 0.5f * (v_left + v_right);
 
         // ===== safety tilt limit =====
-        float theta_err_deg_abs = fabs(theta - theta_eq) * 180.0f / PI;
+        float theta_err_deg_abs = fabs(theta - theta_eq) * 180.0 / PI;
         if (theta_err_deg_abs > theta_max_deg)
         {
             pwm.stop();
@@ -179,30 +201,30 @@ void controlTask(void *param)
             continue;
         }
 
-        float Te_s = Te / 1000.0f;
+        float Te_s = Te / 1000.0;
 
         // ===== speed loop =====
-        float speed_error = -v_mean;
-        float d_speed = (speed_error - last_speed_error) / Te_s;
+        speed_error = -v_mean;
+        d_speed = (speed_error - last_speed_error) / Te_s;
         last_speed_error = speed_error;
 
-        float theta_corr =
+        theta_corr =
             Kp_speed * speed_error +
             Kd_speed * d_speed;
 
         theta_corr = constrain(theta_corr,
-                               -3.0f * DEG_TO_RAD,
-                                3.0f * DEG_TO_RAD);
+                               -3.0 * DEG_TO_RAD,
+                                3.0 * DEG_TO_RAD);
 
         // ===== angle loop =====
-        float theta_ref = theta_eq + theta_corr;
-        float error_theta = theta_ref - theta;   // rad
+        theta_ref = theta_eq + theta_corr;
+        error_theta = theta_ref - theta;   // rad
 
-        float error_theta_deg = error_theta * 180.0f / PI;
-        float gyro_deg = gyro * 180.0f / PI;
+        error_theta_deg = error_theta * 180.0 / PI;
+        gyro_deg = gyro * 180.0 / PI;
 
         // raw controller output at EC layer
-        float ec =
+        ec =
             Kp_theta * error_theta_deg
             - Kd_theta * gyro_deg;
 
@@ -210,12 +232,12 @@ void controlTask(void *param)
         ec = constrain(ec, -ec_max, ec_max);
 
         // independent EC compensation for left/right motors
-        float ec_corr_L = ecCompensate(ec, C0_L);
-        float ec_corr_R = ecCompensate(ec, C0_R);
+        ec_corr_L = ecCompensate(ec, C0_L);
+        ec_corr_R = ecCompensate(ec, C0_R);
 
         // unified mapping for each side
-        int motor_cmd_L = pwmcalcul(ec_corr_L);
-        int motor_cmd_R = pwmcalcul(ec_corr_R);
+        motor_cmd_L = pwmcalcul(ec_corr_L);
+        motor_cmd_R = pwmcalcul(ec_corr_R);
 
         pwm.setSpeedLR(-motor_cmd_L, -motor_cmd_R);
 
@@ -262,14 +284,14 @@ void loop()
     }
 
     // ===== Display scaling factors =====
-    static float disp_theta_gain = 0.5f;
-    static float disp_gyro_gain  = 0.5f;
-    static float disp_speed_gain = 40.0f;
-    static float disp_u_gain     = 0.2f;
+    static float disp_theta_gain = 0.5;
+    static float disp_gyro_gain  = 0.5;
+    static float disp_speed_gain = 40.0;
+    static float disp_u_gain     = 0.2;
 
     // ===== Display variables =====
-    float theta_plot = dbg_theta * 180.0f / PI * disp_theta_gain;
-    float gyro_plot  = dbg_gyro  * 180.0f / PI * disp_gyro_gain;
+    float theta_plot = dbg_theta * 180.0 / PI * disp_theta_gain;
+    float gyro_plot  = dbg_gyro  * 180.0 / PI * disp_gyro_gain;
     float speed_plot = dbg_speed * disp_speed_gain;
     float u_plot     = dbg_u     * disp_u_gain;
 
@@ -279,7 +301,7 @@ void loop()
     Serial.print(' ');
     Serial.print(speed_plot, 6);
     Serial.print(' ');
-    Serial.println(u_plot, 6);
+    Serial.println(ec,6);
 
     delay((uint32_t)Te);
 }
