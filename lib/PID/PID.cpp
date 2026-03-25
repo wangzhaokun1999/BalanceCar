@@ -4,40 +4,40 @@ PID::PID(IMU& imuRef, Encodeur& encRef, PWM& pwmRef)
 : imu(&imuRef),
   encodeur(&encRef),
   pwm(&pwmRef),
-  Te(5.0f),
-  Tau(1000.0f),
-  Kp_theta(0.01f),
-  Kd_theta(0.0f),
-  Kp_speed(0.0f),
-  Kd_speed(0.0f),
-  theta_eq(1.57f),
-  theta_max_deg(30.0f),
-  C0_L(0.199f),
-  C0_R(0.196f),
-  ec_max(0.45f),
-  theta(0.0f),
-  gyro(0.0f),
-  theta_corr(0.0f),
-  theta_ref(0.0f),
-  error_theta(0.0f),
-  error_theta_deg(0.0f),
-  gyro_deg(0.0f),
-  pwm_value(0.0f),
-  v_left(0.0f),
-  v_right(0.0f),
-  v_mean(0.0f),
-  speed_error(0.0f),
-  d_speed(0.0f),
-  ec(0.0f),
-  ec_corr_L(0.0f),
-  ec_corr_R(0.0f),
+  Te(2.0),
+  Tau(1000.0),
+  Kp_theta(0.01),
+  Kd_theta(0.0),
+  Kp_speed(0.0),
+  Kd_speed(0.0),
+  theta_eq(1.57),
+  theta_max_deg(30.0),
+  C0_L(0.199),
+  C0_R(0.196),
+  ec_max(0.45),
+  theta(0.0),
+  gyro(0.0),
+  theta_corr(0.0),
+  theta_ref(0.0),
+  error_theta(0.0),
+  error_theta_deg(0.0),
+  gyro_deg(0.0),
+  pwm_value(0.0),
+  v_left(0.0),
+  v_right(0.0),
+  v_mean(0.0),
+  speed_error(0.0),
+  d_speed(0.0),
+  ec(0.0),
+  ec_corr_L(0.0),
+  ec_corr_R(0.0),
   motor_cmd_L(0),
   motor_cmd_R(0),
-  last_speed_error(0.0f),
-  dbg_theta(0.0f),
-  dbg_gyro(0.0f),
-  dbg_speed(0.0f),
-  dbg_u(0.0f)
+  last_speed_error(0.0),
+  dbg_theta(0.0),
+  dbg_gyro(0.0),
+  dbg_speed(0.0),
+  dbg_u(0.0)
 {
 }
 
@@ -67,8 +67,8 @@ int PID::pwmcalcul(float ecInput)
 {
     ecInput = constrain(ecInput, -ec_max, ec_max);
 
-    pwm_value = (ecInput / ec_max) * 1000.0f;
-    pwm_value = constrain(pwm_value, -1000.0f, 1000.0f);
+    pwm_value = (ecInput / ec_max) * 1000.0;
+    pwm_value = constrain(pwm_value, -1000.0, 1000.0);
 
     return (int)pwm_value;
 }
@@ -114,13 +114,13 @@ void PID::controlLoop()
             dbg_theta = theta;
             dbg_gyro  = gyro;
             dbg_speed = v_mean;
-            dbg_u     = 0.0f;
+            dbg_u     = 0.0;
 
             vTaskDelayUntil(&lastWake, pdMS_TO_TICKS((uint32_t)Te));
             continue;
         }
 
-        float Te_s = Te / 1000.0f;
+        float Te_s = Te / 1000.0;
 
         speed_error = -v_mean;
         d_speed = (speed_error - last_speed_error) / Te_s;
@@ -131,14 +131,14 @@ void PID::controlLoop()
             Kd_speed * d_speed;
 
         theta_corr = constrain(theta_corr,
-                               -3.0f * DEG_TO_RAD,
-                                3.0f * DEG_TO_RAD);
+                               -1.0 * DEG_TO_RAD,
+                                1.0 * DEG_TO_RAD);
 
         theta_ref = theta_eq + theta_corr;
         error_theta = theta_ref - theta;
 
-        error_theta_deg = error_theta * 180.0f / PI;
-        gyro_deg        = gyro * 180.0f / PI;
+        error_theta_deg = error_theta * 180.0 / PI;
+        gyro_deg        = gyro * 180.0 / PI;
 
         ec = Kp_theta * error_theta_deg
            - Kd_theta * gyro_deg;
@@ -156,7 +156,7 @@ void PID::controlLoop()
         dbg_theta = theta;
         dbg_gyro  = gyro;
         dbg_speed = v_mean;
-        dbg_u     = 0.5f * (motor_cmd_L + motor_cmd_R);
+        dbg_u     = 0.5 * (motor_cmd_L + motor_cmd_R);
 
         vTaskDelayUntil(&lastWake, pdMS_TO_TICKS((uint32_t)Te));
     }
@@ -174,14 +174,14 @@ void PID::setTau(float value)
     applyCompatibilityUpdate();
 }
 
-void PID::setKpTheta(float value)   { Kp_theta = constrain(value, 0.0f, 0.5f); }
-void PID::setKdTheta(float value)   { Kd_theta = constrain(value, 0.0f, 0.05f); }
-void PID::setKpSpeed(float value)   { Kp_speed = constrain(value, 0.0f, 50.0f); }
-void PID::setKdSpeed(float value)   { Kd_speed = constrain(value, 0.0f, 50.0f); }
+void PID::setKpTheta(float value)   { Kp_theta = constrain(value, 0.0, 0.5); }
+void PID::setKdTheta(float value)   { Kd_theta = constrain(value, 0.0, 0.05); }
+void PID::setKpSpeed(float value)   { Kp_speed = constrain(value, 0.0, 50.0); }
+void PID::setKdSpeed(float value)   { Kd_speed = constrain(value, 0.0, 50.0); }
 void PID::setThetaEq(float value)   { theta_eq = value; }
-void PID::setThetaMaxDeg(float value) { theta_max_deg = constrain(value, 1.0f, 60.0f); }
-void PID::setC0L(float value)       { C0_L = constrain(value, 0.0f, 0.5f); }
-void PID::setC0R(float value)       { C0_R = constrain(value, 0.0f, 0.5f); }
+void PID::setThetaMaxDeg(float value) { theta_max_deg = constrain(value, 1.0, 60.0); }
+void PID::setC0L(float value)       { C0_L = constrain(value, 0.0, 0.5); }
+void PID::setC0R(float value)       { C0_R = constrain(value, 0.0, 0.5); }
 
 float PID::getTe() const       { return Te; }
 float PID::getTau() const      { return Tau; }
