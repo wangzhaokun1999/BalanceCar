@@ -129,11 +129,11 @@ void reception(char ch)
         }
         else if (cmd == "KpT")
         {
-            Kp_theta = constrain(v, 0.0, 1.0);
+            Kp_theta = constrain(v, 0.0, 0.5);
         }
         else if (cmd == "KdT")
         {
-            Kd_theta = constrain(v, 0.0, 1.0);
+            Kd_theta = constrain(v, 0.0, 0.05);
         }
         else if (cmd == "KpS")
         {
