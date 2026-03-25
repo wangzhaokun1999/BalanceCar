@@ -4,10 +4,10 @@ HyperTerminal::HyperTerminal(PID& pidRef, HardwareSerial& serialRef)
 : pid(&pidRef),
   serial(&serialRef),
   buffer(""),
-  disp_theta_gain(0.5f),
-  disp_gyro_gain(0.5f),
-  disp_speed_gain(40.0f),
-  disp_u_gain(0.2f)
+  disp_theta_gain(0.5),
+  disp_gyro_gain(0.5),
+  disp_speed_gain(40.0),
+  disp_u_gain(0.2)
 {
 }
 
@@ -108,8 +108,8 @@ void HyperTerminal::inputChar(char ch)
 
 void HyperTerminal::sendPlotData()
 {
-    float theta_plot = pid->getDbgTheta() * 180.0f / PI * disp_theta_gain;
-    float gyro_plot  = pid->getDbgGyro()  * 180.0f / PI * disp_gyro_gain;
+    float theta_plot = pid->getDbgTheta() * 180.0 / PI * disp_theta_gain;
+    float gyro_plot  = pid->getDbgGyro()  * 180.0 / PI * disp_gyro_gain;
     float speed_plot = pid->getDbgSpeed() * disp_speed_gain;
     float u_plot     = pid->getDbgU()     * disp_u_gain;
 
