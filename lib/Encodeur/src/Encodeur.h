@@ -15,7 +15,7 @@ public:
 
     float getSpeed_L();
     float getSpeed_R();
-
+    float getSpeed();
 private:
     static void IRAM_ATTR isrLeft();
     static void IRAM_ATTR isrRight();

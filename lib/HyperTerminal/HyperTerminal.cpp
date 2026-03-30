@@ -15,18 +15,49 @@ void HyperTerminal::begin()
 {
 }
 
-void HyperTerminal::setThetaGain(float value) { disp_theta_gain = value; }
-void HyperTerminal::setGyroGain(float value)  { disp_gyro_gain  = value; }
-void HyperTerminal::setSpeedGain(float value) { disp_speed_gain = value; }
-void HyperTerminal::setUGain(float value)     { disp_u_gain     = value; }
+void HyperTerminal::setThetaGain(float value)
+{
+    disp_theta_gain = value;
+}
+
+void HyperTerminal::setGyroGain(float value)
+{
+    disp_gyro_gain = value;
+}
+
+void HyperTerminal::setSpeedGain(float value)
+{
+    disp_speed_gain = value;
+}
+
+void HyperTerminal::setUGain(float value)
+{
+    disp_u_gain = value;
+}
 
 void HyperTerminal::processCommand(const String& line)
 {
     int spaceIndex = line.indexOf(' ');
+
+    if (line == "show")
+    {
+        serial->println("===== PID PARAMETERS =====");
+        serial->print("Te = "); serial->println(pid->getTe(), 6);
+        serial->print("Tau = "); serial->println(pid->getTau(), 6);
+        serial->print("C0_L = "); serial->println(pid->getC0L(), 6);
+        serial->print("C0_R = "); serial->println(pid->getC0R(), 6);
+        serial->print("ec_max = "); serial->println(pid->getEcMax(), 6);
+        serial->print("testEnable = "); serial->println(pid->getManualTestEnable() ? 1 : 0);
+        serial->print("testL = "); serial->println(pid->getManualTestEcL(), 6);
+        serial->print("testR = "); serial->println(pid->getManualTestEcR(), 6);
+        serial->println("==========================");
+        return;
+    }
+
     if (spaceIndex == -1)
         return;
 
-    String cmd   = line.substring(0, spaceIndex);
+    String cmd = line.substring(0, spaceIndex);
     String value = line.substring(spaceIndex + 1);
     float v = value.toFloat();
 
@@ -70,6 +101,10 @@ void HyperTerminal::processCommand(const String& line)
     {
         pid->setC0R(v);
     }
+    else if (cmd == "ecmax")
+    {
+        pid->setEcMax(v);
+    }
     else if (cmd == "gainTheta")
     {
         disp_theta_gain = v;
@@ -86,6 +121,18 @@ void HyperTerminal::processCommand(const String& line)
     {
         disp_u_gain = v;
     }
+    else if (cmd == "testEnable")
+    {
+        pid->setManualTestEnable(v > 0.5);
+    }
+    else if (cmd == "testL")
+    {
+        pid->setManualTestEcL(v);
+    }
+    else if (cmd == "testR")
+    {
+        pid->setManualTestEcR(v);
+    }
 }
 
 void HyperTerminal::inputChar(char ch)
@@ -101,6 +148,7 @@ void HyperTerminal::inputChar(char ch)
     else
     {
         buffer += ch;
+
         if (buffer.length() > 64)
             buffer = "";
     }
@@ -119,8 +167,9 @@ void HyperTerminal::sendPlotData()
     serial->print(' ');
     serial->print(speed_plot, 6);
     serial->print(' ');
-    serial->println(pid->getEc(), 6);
+    serial->println(u_plot, 6);
 }
+
 void HyperTerminal::update()
 {
     while (serial->available() > 0)

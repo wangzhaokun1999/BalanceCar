@@ -13,7 +13,7 @@ private:
     Encodeur* encodeur;
     PWM* pwm;
 
-    // ===== parameters =====
+    // parameters
     float Te;
     float Tau;
 
@@ -31,7 +31,7 @@ private:
 
     float ec_max;
 
-    // ===== runtime =====
+    // runtime variables
     float theta;
     float gyro;
     float theta_corr;
@@ -56,19 +56,23 @@ private:
 
     float last_speed_error;
 
-    // ===== debug =====
+    // manual test mode
+    bool manual_test_enable;
+    float manual_test_ec_L;
+    float manual_test_ec_R;
+
+    // debug
     volatile float dbg_theta;
     volatile float dbg_gyro;
     volatile float dbg_speed;
     volatile float dbg_u;
 
-    // ===== internal =====
     static void taskWrapper(void* param);
     void controlLoop();
 
     void applyCompatibilityUpdate();
-    float ecCompensate(float ec, float C0);
-    int pwmcalcul(float ec);
+    float ecCompensate(float ecValue, float C0);
+    int pwmcalcul(float ecInput);
 
 public:
     PID(IMU& imuRef, Encodeur& encRef, PWM& pwmRef);
@@ -87,16 +91,48 @@ public:
     void setThetaMaxDeg(float value);
     void setC0L(float value);
     void setC0R(float value);
+    void setEcMax(float value);
+
+    void setManualTestEnable(bool value);
+    void setManualTestEcL(float value);
+    void setManualTestEcR(float value);
 
     // getters
     float getTe() const;
     float getTau() const;
+
+    float getKpTheta() const;
+    float getKdTheta() const;
+    float getKpSpeed() const;
+    float getKdSpeed() const;
+
+    float getThetaEq() const;
+    float getThetaMaxDeg() const;
+
     float getEc() const;
+    float getEcMax() const;
+    float getC0L() const;
+    float getC0R() const;
+
+    bool getManualTestEnable() const;
+    float getManualTestEcL() const;
+    float getManualTestEcR() const;
 
     float getDbgTheta() const;
     float getDbgGyro() const;
     float getDbgSpeed() const;
     float getDbgU() const;
+
+    float getLeftSpeed() const;
+    float getRightSpeed() const;
+
+    // realtime values for web
+    float getAngle() const;
+    float getGyro() const;
+    float getSpeed() const;
+
+    Encodeur* getEncodeur();
+    PWM* getPWM();
 };
 
 #endif

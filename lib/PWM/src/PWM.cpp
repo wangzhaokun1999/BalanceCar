@@ -47,12 +47,12 @@ void PWM::driveRight(int alpha)
 // ================= Gain setters =================
 void PWM::setGainLeft(float g)
 {
-    gainLeft = constrain(g, 0.5f, 1.5f);
+    gainLeft = constrain(g, 0.5, 1.5);
 }
 
 void PWM::setGainRight(float g)
 {
-    gainRight = constrain(g, 0.5f, 1.5f);
+    gainRight = constrain(g, 0.5, 1.5);
 }
 
 float PWM::getGainLeft()

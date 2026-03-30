@@ -58,3 +58,4 @@ float Encodeur::getRPM_L() { return rpmL; }
 float Encodeur::getRPM_R() { return rpmR; }
 float Encodeur::getSpeed_L() { return speedL; }
 float Encodeur::getSpeed_R() { return speedR; }
+float Encodeur::getSpeed() { return (speedR + speedL)/2; }
