@@ -49,12 +49,6 @@ void PID::begin()
     applyCompatibilityUpdate();
 }
 
-void PID::applyCompatibilityUpdate()
-{
-    imu->setTeMs(Te);
-    imu->setTauMs(Tau);
-}
-
 float PID::ecCompensate(float ecValue, float C0)
 {
     if (fabs(ecValue) < 0.0001)
@@ -260,16 +254,6 @@ void PID::setManualTestEcR(float value)
     manual_test_ec_R = constrain(value, -ec_max, ec_max);
 }
 
-float PID::getTe() const
-{
-    return Te;
-}
-
-float PID::getTau() const
-{
-    return Tau;
-}
-
 float PID::getEc() const
 {
     return ec;
@@ -387,4 +371,10 @@ Encodeur* PID::getEncodeur()
 PWM* PID::getPWM()
 {
     return pwm;
+}
+
+void PID::applyCompatibilityUpdate()
+{
+    Te = constrain(Te, 1.0, 100.0);
+    Tau = constrain(Tau, 1.0, 10000.0);
 }

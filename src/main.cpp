@@ -35,7 +35,7 @@ float Kd_theta = 0.0f;
 float Kp_speed = 0.0f;
 float Kd_speed = 0.0f;
 
-float theta_eq = 1.56f;
+float theta_eq = 1.572f;
 float theta_max_deg = 30.0f;
 
 float C0_L = 0.22f;
@@ -47,7 +47,7 @@ float ec_max = 0.45f;
 // Push globals -> PID
 // Rename these if your PID method names differ
 // =====================================================
-static void syncGlobalsToPID()
+static void syncWebToEsp()
 {
     pid.setTe(Te);
     pid.setTau(Tau);
@@ -71,10 +71,10 @@ static void syncGlobalsToPID()
 // Pull PID -> globals
 // Rename these if your PID method names differ
 // =====================================================
-static void syncPIDToGlobals()
+static void syncEspToWeb()
 {
-    Te            = pid.getTe();
-    Tau           = pid.getTau();
+    Te            = imu.getTe();
+    Tau           = imu.getTau();
 
     Kp_theta      = pid.getKpTheta();
     Kd_theta      = pid.getKdTheta();
@@ -94,11 +94,8 @@ static void syncPIDToGlobals()
 // =====================================================
 // Required by webserver.cpp
 // =====================================================
-void applyCompatibilityUpdate()
+void realTimeTurner()
 {
-    imu.setTeMs(Te);
-    imu.setTauMs(Tau);
-
     pid.setTe(Te);
     pid.setTau(Tau);
 }
@@ -111,12 +108,12 @@ static void web_apply_param(const char *name, float value)
     if (strcmp(name, "Te") == 0)
     {
         Te = constrain(value, 1.0f, 100.0f);
-        applyCompatibilityUpdate();
+        realTimeTurner();
     }
     else if (strcmp(name, "Tau") == 0)
     {
         Tau = constrain(value, 1.0f, 10000.0f);
-        applyCompatibilityUpdate();
+        realTimeTurner();
     }
     else if (strcmp(name, "KpT") == 0)
     {
@@ -155,7 +152,7 @@ static void web_apply_param(const char *name, float value)
         ec_max = constrain(value, 0.01f, 1.0f);
     }
 
-    syncGlobalsToPID();
+    syncWebToEsp();
 }
 
 // =====================================================
@@ -163,7 +160,7 @@ static void web_apply_param(const char *name, float value)
 // =====================================================
 static void web_read_params(WebParams *p)
 {
-    syncPIDToGlobals();
+    syncEspToWeb();
 
     p->Te            = Te;
     p->Tau           = Tau;
@@ -199,7 +196,7 @@ void setup()
     pwm.begin();
 
     pid.begin();
-    syncGlobalsToPID();
+    syncWebToEsp();
     pid.startTask();
 
     wifi_init_softap();

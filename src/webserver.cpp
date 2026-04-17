@@ -104,7 +104,7 @@ button:hover, .navbtn:hover{
 
 <div class="container">
     <div class="topbar">
-        <a class="navbtn" href="/tuning">进入在线调参界面</a>
+        <a class="navbtn" href="/tuning">Turning page</a>
     </div>
 
     <div class="row">
@@ -116,7 +116,7 @@ button:hover, .navbtn:hover{
         </div>
 
         <div class="card data">
-            <h3>实时数据</h3>
+            <h3>Real time data</h3>
             Angle: <span id="angle">0</span><br>
             Speed: <span id="speed">0</span><br>
             Theta error: <span id="thetaerr">0</span>
@@ -300,8 +300,8 @@ button:hover, .navbtn:hover{
 
 <div class="container">
     <div class="topbar">
-        <a class="navbtn" href="/">返回控制页面</a>
-        <button onclick="refreshParams()">刷新参数</button>
+        <a class="navbtn" href="/">control page</a>
+        <button onclick="refreshParams()">flesh</button>
     </div>
 
     <div class="card">
@@ -655,10 +655,15 @@ static esp_err_t params_handler(httpd_req_t *req)
              "\"ec_max\":%.6f"
              "}",
              p.Te, p.Tau,
-             p.Kp_theta, p.Kd_theta,
-             p.Kp_speed, p.Kd_speed,
-             p.theta_eq, p.theta_max_deg,
-             p.C0_L, p.C0_R, p.ec_max);
+             p.Kp_theta, 
+             p.Kd_theta,
+             p.Kp_speed, 
+             p.Kd_speed,
+             p.theta_eq, 
+             p.theta_max_deg,
+             p.C0_L, 
+             p.C0_R, 
+             p.ec_max);
 
     httpd_resp_set_type(req, "application/json");
     return httpd_resp_send(req, resp, HTTPD_RESP_USE_STRLEN);

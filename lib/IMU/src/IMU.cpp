@@ -83,20 +83,13 @@ float IMU::getGyroZ()
     return lastGyroZ;
 }
 
-void IMU::setTeMs(float te_ms)
+float IMU::getTe()
 {
-    if (te_ms < 1.0f) te_ms = 1.0f;
-    if (te_ms > 100.0f) te_ms = 100.0f;
-
-    Te_ms = te_ms;
-    alpha = Tau_ms / (Tau_ms + Te_ms);
+    return Te_ms;
 }
 
-void IMU::setTauMs(float tau_ms)
+float IMU::getTau()
 {
-    if (tau_ms < 1.0f) tau_ms = 1.0f;
-    if (tau_ms > 10000.0f) tau_ms = 10000.0f;
-
-    Tau_ms = tau_ms;
-    alpha = Tau_ms / (Tau_ms + Te_ms);
+    return Tau_ms;
 }
+

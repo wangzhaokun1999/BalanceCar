@@ -15,14 +15,13 @@ public:
     float getAngle();
     float getAccAngle();
     float getGyroZ();
-
-    void setTeMs(float te_ms);
-    void setTauMs(float tau_ms);
+    float getTe();
+    float getTau();
 
 private:
     static void taskWrapper(void *param);
     void update();
-
+    
     Adafruit_MPU6050 mpu;
 
     float tetagr;

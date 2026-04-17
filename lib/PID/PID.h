@@ -98,9 +98,6 @@ public:
     void setManualTestEcR(float value);
 
     // getters
-    float getTe() const;
-    float getTau() const;
-
     float getKpTheta() const;
     float getKdTheta() const;
     float getKpSpeed() const;
